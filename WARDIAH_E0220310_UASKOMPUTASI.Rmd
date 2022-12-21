@@ -1,0 +1,127 @@
+---
+title: "UAS KOMPUTASI STATISTIKA LANJUT"
+author: "WARDIAH"
+date: '2022-12-20'
+output: html_document
+---
+
+sumber data : https://www.kaggle.com/datasets/d4rklucif3r/restaurant-reviews
+
+siapkan library yang dibutuhkan
+•	tm untuk operasi penambangan teks seperti menghapus angka, karakter khusus, tanda baca, dan kata-kata berhenti (Kata-kata berhenti dalam bahasa apa pun adalah kata-kata yang paling sering muncul yang memiliki nilai sangat kecil untuk NLP dan harus disaring. Contoh kata-kata berhenti dalam bahasa Inggris adalah "the ”, “adalah”, “adalah”.)
+•	snowballc untuk stemming, yaitu proses mereduksi kata menjadi bentuk dasar atau akarnya. Misalnya, algoritma stemming akan mereduksi kata “fishing”, “fished” dan “fisher” menjadi stem “fish”.
+•	wordcloud untuk menghasilkan plot cloud kata.
+•	RColorBrewer untuk palet warna yang digunakan di berbagai plot
+•	syuzhet untuk skor sentimen dan klasifikasi emosi
+•	ggplot2 untuk memplot grafik
+
+```{r }
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+library(syuzhet)
+library(ggplot2)
+
+```
+
+membaca data file ke dalam R
+```{r}
+# import data teks
+Restaurant_Reviews <- read.csv("C:/Users/ACER/Downloads/Restaurant_Reviews.csv", stringsAsFactors=TRUE)
+review <- Restaurant_Reviews$Review
+
+```
+
+tambahkan kode berikut untuk memuat data ke dalam korpus
+```{r}
+# konversi vektor teks menjadi kumpulan dokumen
+words.vec <- VectorSource(review)
+words.corpus <- Corpus(words.vec)
+```
+
+tambahkan kode berikut untuk mengubah dan menjalankan untuk membersihkan data teks.
+```{r}
+# buat transformator konten yang menggantikan pola string dengan spasi
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(words.corpus, toSpace, "/")
+docs <- tm_map(docs, toSpace, "@")
+docs <- tm_map(docs, toSpace, "\\|")
+
+# mengubah teks menjadi huruf kecil
+docs <- tm_map(docs, content_transformer(tolower))
+
+# Menghapus Angka
+docs <- tm_map(docs, removeNumbers)
+
+#hapus stopwords umum bahasa Inggris
+docs <- tm_map(docs, removeWords, stopwords("english"))
+
+#remove punctuations
+docs <- tm_map(docs, removePunctuation)
+
+# menghilangkan ruang putih ekstra
+docs <- tm_map(docs, stripWhitespace)
+
+# hapus kata berhenti Anda sendiri
+docs <- tm_map(docs, removeWords, c("rated", "ratedn", "place"))
+
+```
+Setelah membersihkan data teks, langkah selanjutnya adalah menghitung kemunculan setiap kata, untuk mengidentifikasi topik populer atau trending. Dengan menggunakan fungsi TermDocumentMatrix()dari paket penambangan teks, Anda dapat membuat Matriks Dokumen – tabel yang berisi frekuensi kata.
+Dalam skrip R Anda, tambahkan kode berikut dan jalankan untuk melihat 5 kata teratas yang paling sering ditemukan dalam teks Anda.
+```{r}
+# Bangun matriks istilah-dokumen
+docs_dtm <- TermDocumentMatrix(docs)
+dtm_m <- as.matrix(docs_dtm)
+
+# Bangun matriks istilah-dokumen
+docs_dtm <- TermDocumentMatrix(docs)
+dtm_m <- as.matrix(docs_dtm)
+
+# Urutkan berdasarkan penurunan nilai frekuensi
+dtm_v <- sort(rowSums(dtm_m),decreasing=TRUE)
+dtm_d <- data.frame(word = names(dtm_v),freq=dtm_v)
+
+# Tampilkan 5 kata paling sering teratas
+head(dtm_d, 5)
+
+
+```
+
+selanjutnya,tambahkan kode berikut dan jalankan untuk membuat bagan batang, yang akan ditampilkan di bagian Plot RStudio.
+```{r}
+# Plot kata-kata yang paling sering
+barplot(dtm_d[1:5,]$freq, las = 2, names.arg = dtm_d[1:5,]$word,
+        col ="purple", main ="Top 5 most frequent words",
+        ylab = "Word frequencies")
+```
+
+
+```{r}
+# mengonversi korpus menjadi data.frame
+dtm <- TermDocumentMatrix(docs)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing = TRUE)
+df <- data.frame(word = names(v),freq = v)
+
+
+```
+Di bawah ini adalah penjelasan singkat tentang argumen yang digunakan dalam kata cloud function;
+•	kata – kata yang akan diplot
+•	freq - frekuensi kata-kata
+•	min.freq – kata-kata yang frekuensinya berada pada atau di atas nilai ambang ini diplot (dalam hal ini, saya telah menyetelnya ke 5)
+•	max.words – jumlah maksimum kata yang akan ditampilkan pada plot (pada kode di atas, saya telah mengaturnya menjadi 100)
+•	random.order – Saya telah menyetelnya ke FALSE, sehingga kata-kata diplot dalam urutan penurunan frekuensi
+•	rot.per – persentase kata yang ditampilkan sebagai teks vertikal (dengan rotasi 90 derajat). Saya telah menetapkannya 0,40 (40%), silakan sesuaikan pengaturan ini dengan preferensi Anda
+•	warna - mengubah warna kata dari frekuensi terendah ke frekuensi tertinggi
+```{r}
+# membuat wordcloud
+library(wordcloud)
+set.seed(123)
+wordcloud(words = df$word, freq = df$freq, min.freq = 9,
+          max.words = 300, random.order = FALSE, rot.per = 0.35,
+          colors = brewer.pal(8, "Dark2"))
+```
+
+
+
